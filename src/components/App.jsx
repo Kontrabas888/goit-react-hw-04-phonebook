@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import shortid from 'shortid';
 
 import { AppLayout } from './AppLayout.jsx';
@@ -8,36 +8,27 @@ import { Title } from './Title.jsx';
 import { ContactList } from './ContactList.jsx';
 import { ContactListItem } from './ContactListItem.jsx';
 
-export class App extends Component {
-  state = {
-    contacts: [],
-    filter: ''
-  };
+export function App() {
+  const [contacts, setContacts] = useState([]);
+  const [filter, setFilter] = useState('');
 
-  componentDidMount() {
-    const contacts = localStorage.getItem('contacts');
-    if (contacts) {
-      this.setState({ contacts: JSON.parse(contacts) });
+  useEffect(() => {
+    const storedContacts = localStorage.getItem('contacts');
+    if (storedContacts) {
+      setContacts(JSON.parse(storedContacts));
     }
-  }
+  }, []);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (JSON.stringify(this.state) !== JSON.stringify(prevState)) {
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
-    }
-  }
+  useEffect(() => {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+  }, [contacts]);
 
-  handleFilterChange = (e) => {
-    this.setState({ filter: e.target.value });
-  };
-
-  isContactExist = (name) => {
-    const { contacts } = this.state;
+  const isContactExist = (name) => {
     return contacts.some((contact) => contact.name.toLowerCase() === name.toLowerCase());
   };
 
-  handleFormSubmit = ({ name, number }) => {
-    if (this.isContactExist(name)) {
+  const handleFormSubmit = ({ name, number }) => {
+    if (isContactExist(name)) {
       alert(`The contact ${name} already exists!`);
       return;
     }
@@ -48,67 +39,56 @@ export class App extends Component {
       number,
     };
 
-    this.setState((prevState) => ({
-      contacts: [...prevState.contacts, newContact],
-    }));
+    setContacts((prevContacts) => [...prevContacts, newContact]);
   };
 
-  handleDeleteContact = (id) => {
-    this.setState((prevState) => ({
-      contacts: prevState.contacts.filter((contact) => contact.id !== id),
-    }));
+  const handleDeleteContact = (id) => {
+    setContacts((prevContacts) => prevContacts.filter((contact) => contact.id !== id));
   };
 
-  render() {
-    const { contacts, filter } = this.state;
-    const filteredContacts = contacts.filter(
-      (contact) =>
-        contact.name.toLowerCase().includes(filter.toLowerCase()) ||
-        contact.number.toLowerCase().includes(filter.toLowerCase())
-    );
+  const filteredContacts = contacts.filter(
+    (contact) =>
+      contact.name.toLowerCase().includes(filter.toLowerCase()) ||
+      contact.number.toLowerCase().includes(filter.toLowerCase())
+  );
 
-    return (
-      <>
-        <Header />
-        <AppLayout>
-          <div>
-            <Title className="mb-10" tag="h2">
-              Add contact
-            </Title>
-            <Form onSubmit={this.handleFormSubmit} />
-          </div>
+  return (
+    <>
+      <Header />
+      <AppLayout>
+        <div>
+          <Title className="mb-10" tag="h2">
+            Add contact
+          </Title>
+          <Form onSubmit={handleFormSubmit} />
+        </div>
 
-          <div>
-            <Title className="mb-10" tag="h2">
-              Contact
-            </Title>
-            {contacts.length > 0 ? (
-              <div>
-                <input
-                  type="text"
-                  value={filter}
-                  onChange={this.handleFilterChange}
-                  placeholder="Filter contacts..."
-                />
-                <ContactList
-                  contacts={filteredContacts}
-                  filter={filter}
-                  onDelete={this.handleDeleteContact}
-                  renderItem={(contact) => (
-                    <ContactListItem
-                      key={contact.id}
-                      contact={contact}
-                      onDelete={this.handleDeleteContact}
-                    />
-                  )}
-                />
-              </div>
-            ) : (
-              <Title tag="h3">No contact</Title>
-            )}
-          </div>
-        </AppLayout>
-      </>
-    );
-  }
+        <div>
+          <Title className="mb-10" tag="h2">
+            Contact
+          </Title>
+          {contacts.length > 0 ? (
+            <div>
+              <input
+                type="text"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Filter contacts..."
+              />
+              <ContactList
+                contacts={filteredContacts}
+                filter={filter}
+                onDelete={handleDeleteContact}
+                renderItem={(contact) => (
+                  <ContactListItem key={contact.id} contact={contact} onDelete={handleDeleteContact} />
+                )}
+              />
+            </div>
+          ) : (
+            <Title tag="h3">No contact</Title>
+          )}
+        </div>
+      </AppLayout>
+    </>
+  );
 }
